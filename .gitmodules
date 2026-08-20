@@ -1,0 +1,16 @@
+[submodule "vendor/zshrs"]
+	path = vendor/zshrs
+	url = https://github.com/MenkeTechnologies/zshrs.git
+	branch = main
+[submodule "vendor/strykelang"]
+	path = vendor/strykelang
+	url = https://github.com/MenkeTechnologies/strykelang.git
+	branch = main
+[submodule "vendor/arb"]
+	path = vendor/arb
+	url = https://github.com/MenkeTechnologies/arb.git
+	branch = main
+[submodule "vendor/zvcs"]
+	path = vendor/zvcs
+	url = https://github.com/MenkeTechnologies/zvcs.git
+	branch = main

@@ -1,0 +1,72 @@
+[package]
+name = "zshrs-native"
+version = "0.1.0"
+edition = "2021"
+license = "MIT"
+authors = ["MenkeTechnologies <linux.dev25@gmail.com>"]
+description = "zshrs with git (zvcs), arb, and stryke linked in as no-fork shell builtins"
+repository = "https://github.com/MenkeTechnologies/zshrs-native"
+# Not publishable: the four runtimes are path dependencies on vendored
+# submodules, and zvcs in particular can never be a registry crate — it
+# depends on its own vendored gitoxide fork at `src/ported/gix` by path.
+publish = false
+
+# The binary is `zshrs`, not `zshrs-native`: this is the shell you actually
+# run, a superset of the thin `zshrs` from the zshrs repo. `cargo install
+# --path .` puts `zshrs` on PATH and it is a drop-in replacement.
+[[bin]]
+name = "zshrs"
+path = "src/main.rs"
+
+[features]
+default = ["daemon"]
+# `daemon` mirrors the zshrs feature of the same name. `src/main.rs` includes
+# `vendor/zshrs/bins/zshrs.rs` verbatim via `#[path]`, and that file carries
+# seven `#[cfg(feature = "daemon")]` blocks — cfg is evaluated against THIS
+# package's features, not the dependency's, so the flag has to exist here too
+# or those blocks silently vanish and the daemon never starts.
+daemon = ["dep:zshrs-daemon"]
+
+[dependencies]
+# The shell. `[lib] name = "zsh"` in the zshrs package, so the extern crate is
+# `zsh` — which is what the included `bins/zshrs.rs` refers to.
+#
+# `default-features = false` drops zshrs's `aot-hook`, which defines the
+# `#[no_mangle] fusevm_aot_register_builtins` that fusevm's AOT runtime
+# resolves by name. strykelang defines its own in `strykelang/aot_native.rs`,
+# and linking both is a duplicate-symbol error (under `lto = "fat"` it
+# degrades to a bare "failed to load bitcode of module …rcgu.o"). Exactly the
+# stance strykelang itself takes on its zshrs dependency. `daemon` is a zshrs
+# default that the shell needs, so it is re-enabled explicitly.
+zshrs = { path = "vendor/zshrs", default-features = false, features = ["daemon"] }
+zshrs-daemon = { path = "vendor/zshrs/daemon", optional = true }
+
+# The three runtimes that become builtins. All four packages must resolve to
+# ONE fusevm: it exports 67 `#[no_mangle]` symbols across its aot/jit/ffi
+# modules and cargo treats 0.x minors as semver-incompatible, so two copies in
+# the graph is a link failure, not merely waste. All of zshrs, strykelang and
+# arblang request `fusevm 0.22.0` as of this pin; zvcs does not use fusevm.
+strykelang = { path = "vendor/strykelang" }
+arblang = { path = "vendor/arb" }
+zvcs = { path = "vendor/zvcs/src/extensions" }
+
+# Direct dependencies of the included `bins/zshrs.rs`. Versions track the
+# zshrs package's own; a mismatch here shows up as a type error in code this
+# package does not own, so keep them in sync when bumping the submodule.
+libc = "0.2"
+dirs = "5"
+tracing = "0.1"
+serde_json = "1"
+
+[profile.release]
+opt-level = 3
+lto = "fat"
+codegen-units = 1
+strip = true
+# NOT `panic = "abort"` (which is what the zshrs package uses for its own
+# release profile). Profile settings come from the root package being built,
+# so this one governs the whole graph. git/arb/stryke run IN the shell
+# process now: with `abort`, any panic anywhere in three large foreign
+# codebases takes the interactive shell down with it. `unwind` lets the
+# builtin dispatch boundary catch it and return an exit status instead.
+panic = "unwind"
