@@ -1,0 +1,207 @@
+name: Release
+
+on:
+  push:
+    tags: ['v*']
+  workflow_dispatch:
+    inputs:
+      tag:
+        description: 'Tag to build (e.g. v0.1.0)'
+        required: true
+        type: string
+
+permissions:
+  contents: write
+
+env:
+  CARGO_TERM_COLOR: always
+
+jobs:
+  build:
+    name: Build ${{ matrix.target }}
+    runs-on: ${{ matrix.os }}
+    # Four runtimes in one binary — the shell, gitoxide, arb and stryke — under
+    # `lto = "fat"` and `codegen-units = 1`. This is the longest build in the
+    # fleet by a wide margin; zshrs alone allows 180.
+    timeout-minutes: 360
+    # Per-target failures are tolerated on the variants that carry C
+    # dependencies awkwardly, so the publish + tap jobs ship from whichever
+    # targets did build. `needs: build` is satisfied either way.
+    continue-on-error: ${{ matrix.allow_failure || false }}
+    strategy:
+      fail-fast: false
+      matrix:
+        include:
+          # --- macOS native ---
+          - os: macos-latest
+            target: aarch64-apple-darwin
+          - os: macos-latest
+            target: x86_64-apple-darwin
+          # --- Linux glibc native ---
+          - os: ubuntu-latest
+            target: x86_64-unknown-linux-gnu
+          - os: ubuntu-24.04-arm
+            target: aarch64-unknown-linux-gnu
+          # --- Linux musl static ---
+          # zvcs's vendored gitoxide reaches libz/openssl through its transport
+          # stack and strykelang links git2 + symphonia, so a fully static musl
+          # link is the variant most likely to break. Allowed to fail so it
+          # never blocks a release.
+          - os: ubuntu-latest
+            target: x86_64-unknown-linux-musl
+            allow_failure: true
+          - os: ubuntu-24.04-arm
+            target: aarch64-unknown-linux-musl
+            allow_failure: true
+    steps:
+      - uses: actions/checkout@v6
+        with:
+          # The four runtimes are vendor/ submodules and zvcs carries its own
+          # vendored gitoxide in-tree, so a shallow non-recursive checkout has
+          # nothing to build.
+          submodules: recursive
+
+      - uses: dtolnay/rust-toolchain@stable
+        with:
+          targets: ${{ matrix.target }}
+
+      - name: Install musl tools
+        if: contains(matrix.target, 'musl')
+        run: sudo apt-get update && sudo apt-get install -y musl-tools
+
+      - name: Install native deps (ncurses, tinfo, gdbm, cap, sqlite3)
+        if: startsWith(matrix.os, 'ubuntu')
+        run: |
+          sudo apt-get update
+          sudo apt-get install -y libncurses-dev libtinfo-dev libgdbm-dev libcap-dev libsqlite3-dev
+
+      - uses: Swatinem/rust-cache@v2
+
+      - name: Build zshrs (fat)
+        run: cargo build --release --locked --bin zshrs --target ${{ matrix.target }}
+
+      - name: Package
+        shell: bash
+        run: |
+          cd target/${{ matrix.target }}/release
+          strip zshrs 2>/dev/null || true
+          tar czf ../../../zshrs-native-${{ github.ref_name }}-${{ matrix.target }}.tar.gz zshrs
+          cd ../../..
+
+      - uses: actions/upload-artifact@v6
+        with:
+          name: zshrs-native-${{ matrix.target }}
+          path: zshrs-native-${{ github.ref_name }}-${{ matrix.target }}.tar.gz
+
+  publish:
+    name: Publish GitHub Release
+    needs: build
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v6
+
+      - uses: actions/download-artifact@v4
+        with:
+          path: artifacts
+          merge-multiple: true
+
+      - name: Create GitHub Release
+        env:
+          GH_TOKEN: ${{ github.token }}
+        run: |
+          gh release create ${{ github.ref_name }} \
+            --title "${{ github.ref_name }}" \
+            --generate-notes \
+            artifacts/*.tar.gz
+
+  homebrew:
+    name: Update Homebrew tap
+    needs: publish
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/download-artifact@v4
+        with:
+          path: artifacts
+          merge-multiple: true
+
+      - name: Compute SHA256 sums
+        id: sha
+        shell: bash
+        run: |
+          # zshrs-native-vX.Y.Z-<target>.tar.gz → <target with _ for ->
+          for f in artifacts/*.tar.gz; do
+            base=$(basename "$f")
+            sum=$(sha256sum "$f" | awk '{print $1}')
+            key=$(echo "$base" | sed 's/zshrs-native-v[^-]*-//; s/\.tar\.gz//; s/-/_/g')
+            echo "${key}=${sum}" >> "$GITHUB_OUTPUT"
+          done
+
+      - uses: actions/checkout@v6
+        with:
+          repository: MenkeTechnologies/homebrew-menketech
+          token: ${{ secrets.HOMEBREW_TAP_TOKEN }}
+          path: tap
+
+      - name: Update zshrs-native formula
+        shell: bash
+        env:
+          VERSION: ${{ github.ref_name }}
+          SHA_ARM_MACOS: ${{ steps.sha.outputs.aarch64_apple_darwin }}
+          SHA_X86_MACOS: ${{ steps.sha.outputs.x86_64_apple_darwin }}
+          SHA_X86_LINUX: ${{ steps.sha.outputs.x86_64_unknown_linux_gnu }}
+          SHA_ARM_LINUX: ${{ steps.sha.outputs.aarch64_unknown_linux_gnu }}
+          SHA_X86_LINUX_MUSL: ${{ steps.sha.outputs.x86_64_unknown_linux_musl }}
+          SHA_ARM_LINUX_MUSL: ${{ steps.sha.outputs.aarch64_unknown_linux_musl }}
+        run: |
+          set -eu
+          V="${VERSION#v}"
+          BASE="https://github.com/MenkeTechnologies/zshrs-native/releases/download/v${V}"
+          # Emit an on_arm / on_intel block only when its SHA is non-empty, so a
+          # target that failed to build leaves the formula valid instead of
+          # writing a block with an empty sha256.
+          emit() { local guard="$1" arch="$2" sha="$3"; [ -n "$sha" ] || return 0; printf '    %s do\n      url "%s/zshrs-native-v%s-%s.tar.gz"\n      sha256 "%s"\n    end\n' "$guard" "$BASE" "$V" "$arch" "$sha"; }
+          mac_blocks=$( { emit on_arm aarch64-apple-darwin "$SHA_ARM_MACOS"; emit on_intel x86_64-apple-darwin "$SHA_X86_MACOS"; } )
+          linux_blocks=$( { emit on_intel x86_64-unknown-linux-gnu "$SHA_X86_LINUX"; emit on_arm aarch64-unknown-linux-gnu "$SHA_ARM_LINUX"; } )
+          {
+            printf 'class ZshrsNative < Formula\n'
+            printf '  desc "zshrs with git, arb and stryke compiled in as no-fork builtins"\n'
+            printf '  homepage "https://github.com/MenkeTechnologies/zshrs-native"\n'
+            printf '  license "MIT"\n'
+            # All three install a binary named `zshrs`.
+            printf '  conflicts_with "zshrs", because: "both install zshrs"\n'
+            printf '  conflicts_with "zshrs-all", because: "both install zshrs"\n'
+            printf '  version "%s"\n\n' "$V"
+            if [ -n "$mac_blocks" ]; then
+              printf '  on_macos do\n%s\n  end\n\n' "$mac_blocks"
+            fi
+            if [ -n "$linux_blocks" ]; then
+              printf '  on_linux do\n%s\n  end\n\n' "$linux_blocks"
+            fi
+            printf '  def install\n'
+            printf '    bin.install "zshrs"\n'
+            printf '  end\n\n'
+            printf '  test do\n'
+            printf '    assert_match "hi", shell_output("#{bin}/zshrs -c '"'"'echo hi'"'"'")\n'
+            printf '  end\n'
+            # Homebrew has no on_libc gate, so the static musl tarballs are
+            # referenced by URL for Alpine / scratch / distroless users.
+            if [ -n "$SHA_X86_LINUX_MUSL" ] || [ -n "$SHA_ARM_LINUX_MUSL" ]; then
+              printf '\n  # Static musl tarballs also published at this release:\n'
+              [ -n "$SHA_X86_LINUX_MUSL" ] && printf '  #   zshrs-native-v%s-x86_64-unknown-linux-musl.tar.gz  sha256: %s\n' "$V" "$SHA_X86_LINUX_MUSL"
+              [ -n "$SHA_ARM_LINUX_MUSL" ] && printf '  #   zshrs-native-v%s-aarch64-unknown-linux-musl.tar.gz  sha256: %s\n' "$V" "$SHA_ARM_LINUX_MUSL"
+            fi
+            printf 'end\n'
+          } > tap/Formula/zshrs-native.rb
+
+      - name: Push formula update
+        run: |
+          cd tap
+          git config user.name "github-actions[bot]"
+          git config user.email "github-actions[bot]@users.noreply.github.com"
+          git add Formula/zshrs-native.rb
+          if git diff --cached --quiet; then
+            echo "no changes — formula already up to date"
+            exit 0
+          fi
+          git commit -m "zshrs-native: bump to ${{ github.ref_name }}"
+          git push
