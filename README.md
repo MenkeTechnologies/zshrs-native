@@ -38,6 +38,32 @@ The same treatment extends to `arb` and `stryke`, so the binary hosts a VCS, a
 pipeline TUI language, and a scripting language with no process boundary
 between any of them and the shell.
 
+## World first: an fzf-compatible finder compiled into the shell
+
+Every fzf integration a shell has ever had spawns the fzf binary — zsh's
+`CTRL-T`/`CTRL-R` key bindings, fzf-tab, fish's fzf.fish, PSFzf. The finder is
+a foreign process the shell pipes into and reads back.
+
+arb's finder is linked in. `arb --fzf` is a drop-in for the fzf binary: it
+honors `FZF_DEFAULT_OPTS` and `FZF_DEFAULT_OPTS_FILE` and fzf's flag surface —
+`--preview`/`--preview-window`, `--bind`, `--expect`, `--nth`/`--with-nth`/
+`--delimiter`, `--ansi`, `--tac`, `--tiebreak`, `--height`, `--layout`/
+`--reverse`, `--border`, `--color`, `--header`/`--header-lines`,
+`--print-query`, `--exact`, `--no-sort`, `--filter` — so an existing config
+drops in unchanged and a call site like `ZPWR_FZF='arb --fzf'` keeps its
+prompt, layout, colors and key bindings. The scoring lives in
+`vendor/arb/src/tui.rs` (`fuzzy_score`, `exact_score`, `score_line`), the flag
+and theme layer in `vendor/arb/src/fzf.rs`.
+
+Prior art, and why none of it is the same thing:
+
+| System | What it does | Why it is not this |
+|---|---|---|
+| **Elvish** | The nearest miss by a distance: genuine in-process fuzzy filtering, for command history (histlist) and directory jumping (location mode) — "a mini-fzf" | Shell-internal UI modes, not a finder. They cannot filter an arbitrary pipeline, and they honor none of fzf's CLI or env surface |
+| Nushell `explore` | Built-in interactive TUI pager over structured data | A viewer for nu values, not an fzf-compatible line filter |
+| zsh fzf key bindings, fzf-tab, fzf.fish, PSFzf | Deep fzf integration | Every one spawns the fzf binary |
+| skim | The one fuzzy finder published as an embeddable Rust library rather than binary-only | The capability has been available to any Rust shell for years; none ships it in-process |
+
 `command git` still reaches whatever `git` is on `PATH`, so the escape hatch to
 another implementation is unchanged.
 
