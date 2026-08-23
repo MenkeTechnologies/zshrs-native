@@ -132,7 +132,7 @@ jobs:
           for f in artifacts/*.tar.gz; do
             base=$(basename "$f")
             sum=$(sha256sum "$f" | awk '{print $1}')
-            key=$(echo "$base" | sed 's/zshrs-native-v[^-]*-//; s/\.tar\.gz//; s/-/_/g')
+            key=$(echo "$base" | perl -pe 's/zshrs-native-v[^-]*-//; s/\.tar\.gz//; s/-/_/g')
             echo "${key}=${sum}" >> "$GITHUB_OUTPUT"
           done
 
@@ -187,8 +187,16 @@ jobs:
             # referenced by URL for Alpine / scratch / distroless users.
             if [ -n "$SHA_X86_LINUX_MUSL" ] || [ -n "$SHA_ARM_LINUX_MUSL" ]; then
               printf '\n  # Static musl tarballs also published at this release:\n'
-              [ -n "$SHA_X86_LINUX_MUSL" ] && printf '  #   zshrs-native-v%s-x86_64-unknown-linux-musl.tar.gz  sha256: %s\n' "$V" "$SHA_X86_LINUX_MUSL"
-              [ -n "$SHA_ARM_LINUX_MUSL" ] && printf '  #   zshrs-native-v%s-aarch64-unknown-linux-musl.tar.gz  sha256: %s\n' "$V" "$SHA_ARM_LINUX_MUSL"
+              # `if`, not `[ … ] &&`: under `set -e` a false test at the end of an
+              # AND-list ends the step, and the two musl targets are exactly the
+              # ones allowed to fail — one built, one not, and the formula would
+              # have been truncated before its final `end`.
+              if [ -n "$SHA_X86_LINUX_MUSL" ]; then
+                printf '  #   zshrs-native-v%s-x86_64-unknown-linux-musl.tar.gz  sha256: %s\n' "$V" "$SHA_X86_LINUX_MUSL"
+              fi
+              if [ -n "$SHA_ARM_LINUX_MUSL" ]; then
+                printf '  #   zshrs-native-v%s-aarch64-unknown-linux-musl.tar.gz  sha256: %s\n' "$V" "$SHA_ARM_LINUX_MUSL"
+              fi
             fi
             printf 'end\n'
           } > tap/Formula/zshrs-native.rb
