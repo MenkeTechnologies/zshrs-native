@@ -58,6 +58,29 @@ dirs = "5"
 tracing = "0.1"
 serde_json = "1"
 
+# strykelang depends on `zshrs` as a REGISTRY crate (`zshrs 0.12.35`), because
+# that is the only way a published crate can. In this build that pulled a
+# SECOND shell into the graph beside `vendor/zshrs`, and with it a second
+# fusevm: the registry zshrs pins fusevm 0.22 while all four vendored runtimes
+# are on 0.23, and cargo treats 0.x minors as semver-incompatible, so both were
+# compiled in. Two copies of fusevm means two definitions of each of its 67
+# `#[no_mangle]` symbols, which is the exact condition the dependency comments
+# above exist to prevent — and under `lto = "fat"` it surfaces as
+#
+#     error: failed to load bitcode of module "fusevm-….rcgu.o"
+#
+# which is what took down the v0.1.0 release build. A dev build never links
+# with fat LTO, so it had been shipping two whole shell libraries quietly.
+#
+# The patch redirects that registry dependency at the vendored submodule.
+# Feature unification is safe: strykelang asks for `default-features = false,
+# features = ["daemon"]`, exactly as this package does, so the union still
+# excludes `aot-hook` and strykelang's `fusevm_aot_register_builtins` remains
+# the only definition.
+[patch.crates-io]
+zshrs = { path = "vendor/zshrs" }
+zshrs-daemon = { path = "vendor/zshrs/daemon" }
+
 [profile.release]
 opt-level = 3
 lto = "fat"

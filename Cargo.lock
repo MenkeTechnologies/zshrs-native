@@ -210,7 +210,7 @@ dependencies = [
  "base64 0.22.1",
  "bincode",
  "clap",
- "fusevm 0.23.0",
+ "fusevm",
  "libc",
  "memchr",
  "nu-ansi-term",
@@ -1774,7 +1774,7 @@ dependencies = [
  "libc",
  "option-ext",
  "redox_users 0.5.2",
- "windows-sys 0.61.2",
+ "windows-sys 0.59.0",
 ]
 
 [[package]]
@@ -1973,7 +1973,7 @@ source = "registry+https://github.com/rust-lang/crates.io-index"
 checksum = "39cab71617ae0d63f51a36d69f866391735b51691dbda63cf6f96d042b63efeb"
 dependencies = [
  "libc",
- "windows-sys 0.61.2",
+ "windows-sys 0.59.0",
 ]
 
 [[package]]
@@ -2245,28 +2245,6 @@ name = "funty"
 version = "2.0.0"
 source = "registry+https://github.com/rust-lang/crates.io-index"
 checksum = "e6d5a32815ae3f33302d95fdcb2ce17862f8c65363dcfd29360480ba1001fc9c"
-
-[[package]]
-name = "fusevm"
-version = "0.22.0"
-source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "26d646198633747a11ba7987347e163a115e59cb14ab7f4465cdcb1f87f652e2"
-dependencies = [
- "base64 0.22.1",
- "bincode",
- "chrono",
- "cranelift-codegen",
- "cranelift-frontend",
- "cranelift-jit",
- "cranelift-module",
- "cranelift-native",
- "cranelift-object",
- "glob",
- "libc",
- "serde",
- "sha2 0.10.9",
- "tracing",
-]
 
 [[package]]
 name = "fusevm"
@@ -3945,7 +3923,7 @@ checksum = "3640c1c38b8e4e43584d8df18be5fc6b0aa314ce6ebf51b53313d4306cca8e46"
 dependencies = [
  "hermit-abi 0.5.2",
  "libc",
- "windows-sys 0.61.2",
+ "windows-sys 0.59.0",
 ]
 
 [[package]]
@@ -4892,7 +4870,7 @@ version = "0.50.3"
 source = "registry+https://github.com/rust-lang/crates.io-index"
 checksum = "7957b9740744892f114936ab4a57b3f487491bbeafaf8083688b16841a4240e5"
 dependencies = [
- "windows-sys 0.61.2",
+ "windows-sys 0.59.0",
 ]
 
 [[package]]
@@ -5136,7 +5114,7 @@ source = "registry+https://github.com/rust-lang/crates.io-index"
 checksum = "7d8fae84b431384b68627d0f9b3b1245fcf9f46f6c0e3dc902e9dce64edd1967"
 dependencies = [
  "libc",
- "windows-sys 0.61.2",
+ "windows-sys 0.59.0",
 ]
 
 [[package]]
@@ -5858,7 +5836,7 @@ dependencies = [
  "once_cell",
  "socket2",
  "tracing",
- "windows-sys 0.61.2",
+ "windows-sys 0.59.0",
 ]
 
 [[package]]
@@ -6501,7 +6479,7 @@ dependencies = [
  "errno",
  "libc",
  "linux-raw-sys",
- "windows-sys 0.61.2",
+ "windows-sys 0.59.0",
 ]
 
 [[package]]
@@ -6560,7 +6538,7 @@ dependencies = [
  "security-framework",
  "security-framework-sys",
  "webpki-root-certs",
- "windows-sys 0.61.2",
+ "windows-sys 0.59.0",
 ]
 
 [[package]]
@@ -7407,7 +7385,7 @@ dependencies = [
  "errno",
  "fancy-regex 0.14.0",
  "flate2",
- "fusevm 0.23.0",
+ "fusevm",
  "git2",
  "glob",
  "hex",
@@ -7496,7 +7474,7 @@ dependencies = [
  "xxhash-rust",
  "xz2",
  "zip",
- "zshrs 0.12.35",
+ "zshrs",
  "zstd",
 ]
 
@@ -7797,7 +7775,7 @@ dependencies = [
  "getrandom 0.4.3",
  "once_cell",
  "rustix",
- "windows-sys 0.61.2",
+ "windows-sys 0.59.0",
 ]
 
 [[package]]
@@ -8944,7 +8922,7 @@ version = "0.1.11"
 source = "registry+https://github.com/rust-lang/crates.io-index"
 checksum = "c2a7b1c03c876122aa43f3020e6c3c3ee5c05081c9a00739faf7503aeba10d22"
 dependencies = [
- "windows-sys 0.61.2",
+ "windows-sys 0.59.0",
 ]
 
 [[package]]
@@ -9482,12 +9460,6 @@ checksum = "29666d0abbfad1e3dc4dcf6144730dd3a3ab225bbbdac83319345b1b44ccfc1b"
 
 [[package]]
 name = "znative"
-version = "0.12.35"
-source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "7fb80f8f10bc3a71554f6c701989e90d76f6e23fff4154dd09c7e926d9c01b32"
-
-[[package]]
-name = "znative"
 version = "0.12.36"
 
 [[package]]
@@ -9500,60 +9472,6 @@ dependencies = [
  "crc32fast",
  "log",
  "simd-adler32",
-]
-
-[[package]]
-name = "zshrs"
-version = "0.12.35"
-source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "92289a8928e5ac9d5e7aa43f5ae8e77b8e08328cf32cf450e5ed9b28cc79b1a6"
-dependencies = [
- "atty",
- "bincode",
- "bitflags 2.13.1",
- "byteorder",
- "chrono",
- "crossbeam-channel",
- "crossterm 0.27.0",
- "ctrlc",
- "dirs 5.0.1",
- "filetime",
- "fusevm 0.22.0",
- "glob",
- "hostname",
- "indexmap",
- "libc",
- "libloading",
- "libm",
- "memmap2",
- "nix 0.29.0",
- "notify",
- "notify-debouncer-mini",
- "once_cell",
- "os_pipe",
- "parking_lot",
- "rand 0.8.7",
- "rayon",
- "regex",
- "regex-lite",
- "rkyv",
- "rusqlite",
- "serde",
- "serde_json",
- "sha2 0.10.9",
- "tempfile",
- "thiserror 2.0.20",
- "tokio",
- "toml 1.1.4+spec-1.1.0",
- "tracing",
- "tracing-appender",
- "tracing-chrome",
- "tracing-subscriber",
- "unicode-width 0.2.2",
- "walkdir",
- "znative 0.12.35",
- "zshrs-daemon 0.12.35",
- "zstd",
 ]
 
 [[package]]
@@ -9571,7 +9489,7 @@ dependencies = [
  "dirs 5.0.1",
  "fancy-regex 0.18.0",
  "filetime",
- "fusevm 0.23.0",
+ "fusevm",
  "glob",
  "hostname",
  "indexmap",
@@ -9604,48 +9522,9 @@ dependencies = [
  "tracing-subscriber",
  "unicode-width 0.2.2",
  "walkdir",
- "znative 0.12.36",
- "zshrs-daemon 0.12.36",
+ "znative",
+ "zshrs-daemon",
  "zstd",
-]
-
-[[package]]
-name = "zshrs-daemon"
-version = "0.12.35"
-source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "775573cacb5e479bea5b2742f05e810f612391826e226d0e87b7da27767a741a"
-dependencies = [
- "atty",
- "axum",
- "base64 0.22.1",
- "byteorder",
- "chrono",
- "cron",
- "dirs 5.0.1",
- "glob",
- "libc",
- "memmap2",
- "nix 0.29.0",
- "notify",
- "notify-debouncer-mini",
- "parking_lot",
- "printpdf",
- "rand 0.8.7",
- "regex",
- "rkyv",
- "rusqlite",
- "serde",
- "serde_json",
- "sha2 0.10.9",
- "thiserror 2.0.20",
- "tokio",
- "tokio-stream",
- "toml 1.1.4+spec-1.1.0",
- "tower 0.4.13",
- "tracing",
- "tracing-appender",
- "tracing-subscriber",
- "walkdir",
 ]
 
 [[package]]
@@ -9695,8 +9574,8 @@ dependencies = [
  "serde_json",
  "strykelang",
  "tracing",
- "zshrs 0.12.36",
- "zshrs-daemon 0.12.36",
+ "zshrs",
+ "zshrs-daemon",
  "zvcs",
 ]
 
