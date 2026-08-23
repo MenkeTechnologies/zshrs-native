@@ -43,9 +43,18 @@ fn main() {
     // a user `git() { … }` still shadows this, and `command git` still reaches
     // whatever `git` is on `PATH`. What is gone is the fork, the execve, the
     // PATH walk and the dynamic loader — `git status` is now a function call.
+    //
+    // Every name each runtime ships a binary under is registered, not just the
+    // headline one. strykelang installs `stryke`, `st` and `s` — three
+    // identical entry points whose behaviour differs by `argv[0]`, which
+    // `stryke::cli` reads for itself — so registering only `stryke` would have
+    // left `s` and `st` forking to `/opt/homebrew/bin/s` from inside a shell
+    // that has strykelang linked in.
     zsh::register_native_command("git", zvcs::run_argv);
     zsh::register_native_command("arb", arb::cli::run_argv);
-    zsh::register_native_command("stryke", stryke::cli::run_argv);
+    for name in ["stryke", "st", "s"] {
+        zsh::register_native_command(name, stryke::cli::run_argv);
+    }
 
     // `@ <code>` at the prompt runs stryke instead of shell code. The hook is
     // a `OnceLock` in the zshrs lib (`zsh::set_stryke_handler`); the thin

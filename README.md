@@ -52,7 +52,7 @@ superset of the thin shell, not a different one.
 |---------|---------|-------------------|
 | `git` | [zvcs](https://github.com/MenkeTechnologies/zvcs) — vendored gitoxide, every porcelain verb native | `/usr/bin/git` |
 | `arb` | [arblang](https://github.com/MenkeTechnologies/arb) — pipeline TUI, query engine, fzf finder | `fzf`, `jq`, `yq` |
-| `stryke` | [strykelang](https://github.com/MenkeTechnologies/strykelang) — Perl-superset scripting | `perl`, `awk` |
+| `stryke` · `st` · `s` | [strykelang](https://github.com/MenkeTechnologies/strykelang) — Perl-superset scripting; all three names it ships, each dispatching on its own `argv[0]` | `perl`, `awk` |
 | `@ <code>` | strykelang, inline at the prompt | — |
 
 ```
@@ -172,8 +172,14 @@ a line:
 ```rust
 zsh::register_native_command("git", zvcs::run_argv);
 zsh::register_native_command("arb", arb::cli::run_argv);
-zsh::register_native_command("stryke", stryke::cli::run_argv);
+for name in ["stryke", "st", "s"] {
+    zsh::register_native_command(name, stryke::cli::run_argv);
+}
 ```
+
+Every name a runtime ships a binary under is registered, not only the headline
+one: strykelang installs `stryke`, `st` and `s`, three identical entry points
+that differ by the `argv[0]` `stryke::cli` reads for itself.
 
 Each runtime exposes one `run_argv(&[String]) -> i32` taking the whole command
 line, `argv[0]` included, and each wraps it in its own `hosted::run`. That
@@ -181,6 +187,17 @@ wrapper is what makes a program written to own its process safe to call inside
 one it does not: an `exit` from deep in a rendering loop unwinds back instead
 of taking the shell down, a panic becomes an exit status, and a `git -C <dir>`
 that moved the working directory is undone on the way out.
+
+One thing the wrapper cannot undo is a child git spawns on purpose. git forks a
+`git` child for a handful of jobs — `status` asks one for the submodule
+summary, `submodule update` fetches through one, `rebase` drives `am` and
+`commit` through them — and each site spawns "itself", which under a host is
+the host: `Command::new(current_exe()).args(["submodule", "summary"])` ran *the
+shell* and answered `zshrs: can't open input file: submodule`. zvcs resolves
+the spawn target through `hosted::git_exe()` instead — `$ZVCS_GIT_EXE`, else
+the first `git` on `PATH` that is not the host binary itself — so those
+children reach a git. They are the one place a fork survives, exactly where git
+itself forks.
 
 A registered name occupies the *builtin* slot, so zsh's `alias → function →
 builtin → external` resolution order is intact and every way of asking for the
