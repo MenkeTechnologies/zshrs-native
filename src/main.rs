@@ -29,6 +29,24 @@
 mod shell;
 
 fn main() {
+    // The three sibling runtimes become shell builtins here. Each exposes one
+    // `run_argv(&[String]) -> i32` — the whole command line, `argv[0]`
+    // included, exactly as its own `main` would have received it — and each
+    // wraps that in its `hosted::run`, which is what makes a runtime written
+    // to own its process safe to call inside one it does not: an `exit` from
+    // deep in a rendering loop unwinds back instead of taking the shell down,
+    // a panic becomes an exit status, and a `-C` that moved the working
+    // directory is undone on the way out.
+    //
+    // `zsh::register_native_command` puts the name in the shell's *builtin*
+    // slot, so zsh's alias → function → builtin → external order is preserved:
+    // a user `git() { … }` still shadows this, and `command git` still reaches
+    // whatever `git` is on `PATH`. What is gone is the fork, the execve, the
+    // PATH walk and the dynamic loader — `git status` is now a function call.
+    zsh::register_native_command("git", zvcs::run_argv);
+    zsh::register_native_command("arb", arb::cli::run_argv);
+    zsh::register_native_command("stryke", stryke::cli::run_argv);
+
     // `@ <code>` at the prompt runs stryke instead of shell code. The hook is
     // a `OnceLock` in the zshrs lib (`zsh::set_stryke_handler`); the thin
     // binary never registers one, so `@` there is an ordinary character.

@@ -158,8 +158,41 @@ is `vendor/arb/src/fzf.rs`.
 | `stryke -ne '…'` | fork + exec | **Builtin** — zero fork |
 | `@ <code>` | not possible | Inline stryke at the prompt |
 
-`command git` still reaches whatever `git` is on `PATH`, so the escape hatch to
-another implementation is unchanged.
+### How a name reaches a runtime
+
+The shell library owns a registry of *host-registered native commands*
+(`vendor/zshrs/src/extensions/native_cmds.rs`). It is the third builtin
+registry in the shell and the only one the binary writes rather than the
+library: `EXT_BUILTIN_NAMES` and the daemon's `ZSHRS_BUILTIN_NAMES` are `const`
+arrays owned by the zshrs crate, and the three runtimes cannot be dependencies
+of that crate — zvcs depends on its vendored gitoxide by path, which makes any
+dependent unpublishable. So `src/main.rs` registers them before the shell reads
+a line:
+
+```rust
+zsh::register_native_command("git", zvcs::run_argv);
+zsh::register_native_command("arb", arb::cli::run_argv);
+zsh::register_native_command("stryke", stryke::cli::run_argv);
+```
+
+Each runtime exposes one `run_argv(&[String]) -> i32` taking the whole command
+line, `argv[0]` included, and each wraps it in its own `hosted::run`. That
+wrapper is what makes a program written to own its process safe to call inside
+one it does not: an `exit` from deep in a rendering loop unwinds back instead
+of taking the shell down, a panic becomes an exit status, and a `git -C <dir>`
+that moved the working directory is undone on the way out.
+
+A registered name occupies the *builtin* slot, so zsh's `alias → function →
+builtin → external` resolution order is intact and every way of asking for the
+binary on disk still gets it:
+
+| | Result |
+|---|---|
+| `git status` | in-process — no fork, no `PATH` |
+| `git() { … }; git status` | the function; a native command shadows like `cat` does |
+| `command git status` | the `git` on `PATH` |
+| `/usr/bin/git status` | that binary — a `/`-qualified word is never a registry key |
+| `disable git` … `enable git` | falls through to `PATH` and back, per shell |
 
 ---
 
@@ -222,9 +255,9 @@ Linking the four surfaced three upstream conflicts, each fixed at its source:
 
 | | State |
 |---|---|
-| Four runtimes link into one binary | **Working** — `zshrs -c` runs; one fusevm, one libsqlite3-sys |
-| `git` / `arb` / `stryke` as builtins | **Not dispatched yet.** Each needs an argv entry (`run_argv(&[String]) -> i32`); none exposes one — their CLI layers live in `main.rs`, which no other crate can call |
-| `@ <code>` → stryke | **Registered, not reached.** `zsh::try_stryke_dispatch` is consulted only from `bins/zshrs.rs:process_line`, and interactive input never returns to the bin — it hands off at `bins/zshrs.rs:2642` to `zsh::ported::init::zsh_main()` in the library |
+| Four runtimes link into one binary | **Working** — one fusevm, one libsqlite3-sys |
+| `git` / `arb` / `stryke` as builtins | **Working.** `whence -w` reports `builtin`, `${+builtins[git]}` is 1, and with `PATH` emptied `git --version`, `stryke -e …` and `arb --filter …` all still answer while `ls` reports command not found — nothing is resolved through `PATH` or spawned |
+| `@ <code>` → stryke | **Registered, not reached.** `zsh::try_stryke_dispatch` is consulted from `bins/zshrs.rs:process_line`, which serves only the line-by-line script reader; the prompt and `-c` go through the ported lexer in the library, where a leading `@` is still an ordinary character |
 
 ---
 
