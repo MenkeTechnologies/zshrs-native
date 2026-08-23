@@ -80,18 +80,66 @@ jobs:
       - name: Build zshrs (fat)
         run: cargo build --release --locked --bin zshrs --target ${{ matrix.target }}
 
+      # The three binaries the `-all` package ships beside the shell. `zd` and
+      # `zshrs-recorder` are bin targets of the zshrs PACKAGE, gated behind its
+      # `zd` / `recorder` features, and a path dependency is not a workspace
+      # member — `cargo build -p zshrs --features zshrs/zd` is refused with
+      # "cannot specify features for packages outside of workspace", and
+      # without the flag the target itself is refused for want of them. So they
+      # are built through the submodule's own manifest, which costs a second
+      # compile of the zshrs lib under that feature set. `zshrs-daemon` is a
+      # separate package and needs no features, so `-p` reaches it from here
+      # and it reuses everything this build already compiled.
+      #
+      # Tolerated failure: a target that cannot produce these still ships its
+      # plain `zshrs` tarball. The packaging step below emits the `-all`
+      # tarball only when all four binaries are present.
+      - name: Build zd, zshrs-recorder, zshrs-daemon
+        id: aux
+        continue-on-error: true
+        run: |
+          cargo build --release --locked --manifest-path vendor/zshrs/Cargo.toml \
+            --features zd,recorder --bin zd --bin zshrs-recorder \
+            --target ${{ matrix.target }}
+          cargo build --release --locked -p zshrs-daemon --bin zshrs-daemon \
+            --target ${{ matrix.target }}
+
       - name: Package
         shell: bash
         run: |
-          cd target/${{ matrix.target }}/release
-          strip zshrs 2>/dev/null || true
-          tar czf ../../../zshrs-native-${{ github.ref_name }}-${{ matrix.target }}.tar.gz zshrs
-          cd ../../..
+          set -eu
+          V="${{ github.ref_name }}"
+          T="${{ matrix.target }}"
+          stage="$(mktemp -d)"
+          cp "target/$T/release/zshrs" "$stage/"
+          tar czf "zshrs-native-$V-$T.tar.gz" -C "$stage" zshrs
+          # `-all`: the shell plus the daemon, its standalone client and the
+          # recorder — the same set `zshrs-all` ships, with the fat shell in
+          # place of the thin one.
+          # `if`, not `[ … ] && cp`: under `set -e` a false test on the last
+          # iteration ends the step, and a missing binary here is the expected
+          # case, not a failure.
+          for b in "target/$T/release/zshrs-daemon" \
+                   "vendor/zshrs/target/$T/release/zd" \
+                   "vendor/zshrs/target/$T/release/zshrs-recorder"; do
+            if [ -f "$b" ]; then cp "$b" "$stage/"; fi
+          done
+          # The root release profile strips; the submodule's own profile is not
+          # this package's to dictate, so strip whatever is left over here.
+          ( cd "$stage" && strip zd zshrs-recorder zshrs-daemon 2>/dev/null || true )
+          if [ -f "$stage/zd" ] && [ -f "$stage/zshrs-recorder" ] && [ -f "$stage/zshrs-daemon" ]; then
+            tar czf "zshrs-native-all-$V-$T.tar.gz" -C "$stage" \
+              zshrs zd zshrs-recorder zshrs-daemon
+          else
+            echo "auxiliary binaries missing for $T — shipping the plain tarball only"
+          fi
 
       - uses: actions/upload-artifact@v6
         with:
           name: zshrs-native-${{ matrix.target }}
-          path: zshrs-native-${{ github.ref_name }}-${{ matrix.target }}.tar.gz
+          # Both tarballs when the target produced them; the glob quietly
+          # matches one file when it did not.
+          path: zshrs-native*-${{ github.ref_name }}-${{ matrix.target }}.tar.gz
 
   publish:
     name: Publish GitHub Release
@@ -128,11 +176,20 @@ jobs:
         id: sha
         shell: bash
         run: |
-          # zshrs-native-vX.Y.Z-<target>.tar.gz → <target with _ for ->
+          # zshrs-native-vX.Y.Z-<target>.tar.gz      → <target with _ for ->
+          # zshrs-native-all-vX.Y.Z-<target>.tar.gz  → all_<same>
+          #
+          # The `-all` case is matched FIRST: its name also begins
+          # `zshrs-native-`, so the plain pattern would leave `all_…` embedded
+          # in the key and the two packages would fight over one output.
           for f in artifacts/*.tar.gz; do
             base=$(basename "$f")
             sum=$(sha256sum "$f" | awk '{print $1}')
-            key=$(echo "$base" | perl -pe 's/zshrs-native-v[^-]*-//; s/\.tar\.gz//; s/-/_/g')
+            if [[ "$base" == zshrs-native-all-* ]]; then
+              key="all_$(echo "$base" | perl -pe 's/zshrs-native-all-v[^-]*-//; s/\.tar\.gz//; s/-/_/g')"
+            else
+              key=$(echo "$base" | perl -pe 's/zshrs-native-v[^-]*-//; s/\.tar\.gz//; s/-/_/g')
+            fi
             echo "${key}=${sum}" >> "$GITHUB_OUTPUT"
           done
 
@@ -201,12 +258,74 @@ jobs:
             printf 'end\n'
           } > tap/Formula/zshrs-native.rb
 
+      # The daily-driver package: the same four binaries `zshrs-all` ships,
+      # with the fat shell in place of the thin one. Separate tarballs, so it
+      # gets its own SHA keys (`all_<target>`) and its own formula.
+      - name: Update zshrs-native-all formula
+        shell: bash
+        env:
+          VERSION: ${{ github.ref_name }}
+          SHA_ARM_MACOS: ${{ steps.sha.outputs.all_aarch64_apple_darwin }}
+          SHA_X86_MACOS: ${{ steps.sha.outputs.all_x86_64_apple_darwin }}
+          SHA_X86_LINUX: ${{ steps.sha.outputs.all_x86_64_unknown_linux_gnu }}
+          SHA_ARM_LINUX: ${{ steps.sha.outputs.all_aarch64_unknown_linux_gnu }}
+        run: |
+          set -eu
+          V="${VERSION#v}"
+          BASE="https://github.com/MenkeTechnologies/zshrs-native/releases/download/v${V}"
+          emit() { local guard="$1" arch="$2" sha="$3"; [ -n "$sha" ] || return 0; printf '    %s do\n      url "%s/zshrs-native-all-v%s-%s.tar.gz"\n      sha256 "%s"\n    end\n' "$guard" "$BASE" "$V" "$arch" "$sha"; }
+          mac_blocks=$( { emit on_arm aarch64-apple-darwin "$SHA_ARM_MACOS"; emit on_intel x86_64-apple-darwin "$SHA_X86_MACOS"; } )
+          linux_blocks=$( { emit on_intel x86_64-unknown-linux-gnu "$SHA_X86_LINUX"; emit on_arm aarch64-unknown-linux-gnu "$SHA_ARM_LINUX"; } )
+          # A release where no target produced the four binaries writes no
+          # formula at all rather than one with no platform block in it.
+          if [ -z "$mac_blocks" ] && [ -z "$linux_blocks" ]; then
+            echo "no -all tarballs in this release — leaving the formula alone"
+            exit 0
+          fi
+          {
+            printf 'class ZshrsNativeAll < Formula\n'
+            printf '  desc "Full zshrs-native install — fat shell + zd client + recorder + daemon"\n'
+            printf '  homepage "https://github.com/MenkeTechnologies/zshrs-native"\n'
+            printf '  license "MIT"\n'
+            # Every one of these installs a binary named `zshrs` or `zd`.
+            printf '  conflicts_with "zshrs", because: "both install zshrs and zd"\n'
+            printf '  conflicts_with "zshrs-all", because: "both install zshrs and zd"\n'
+            printf '  conflicts_with "zshrs-daemon", because: "both install zshrs-daemon and zd"\n'
+            printf '  conflicts_with "zshrs-native", because: "both install zshrs"\n'
+            printf '  version "%s"\n\n' "$V"
+            if [ -n "$mac_blocks" ]; then
+              printf '  on_macos do\n%s\n  end\n\n' "$mac_blocks"
+            fi
+            if [ -n "$linux_blocks" ]; then
+              printf '  on_linux do\n%s\n  end\n\n' "$linux_blocks"
+            fi
+            printf '  def install\n'
+            printf '    bin.install "zshrs"\n'
+            printf '    bin.install "zd"\n'
+            printf '    bin.install "zshrs-recorder"\n'
+            printf '    bin.install "zshrs-daemon"\n'
+            printf '  end\n\n'
+            printf '  test do\n'
+            printf '    assert_match "hi", shell_output("#{bin}/zshrs -c '"'"'echo hi'"'"'")\n'
+            printf '    assert_predicate bin/"zd", :exist?\n'
+            printf '    assert_predicate bin/"zshrs-recorder", :exist?\n'
+            printf '    assert_predicate bin/"zshrs-daemon", :exist?\n'
+            printf '  end\n'
+            printf 'end\n'
+          } > tap/Formula/zshrs-native-all.rb
+
       - name: Push formula update
         run: |
           cd tap
           git config user.name "github-actions[bot]"
           git config user.email "github-actions[bot]@users.noreply.github.com"
+          # `-all` may legitimately be absent from a release in which no target
+          # produced the four binaries; `git add` on a missing path is an error,
+          # so it is added only when the step above wrote it.
           git add Formula/zshrs-native.rb
+          if [ -f Formula/zshrs-native-all.rb ]; then
+            git add Formula/zshrs-native-all.rb
+          fi
           if git diff --cached --quiet; then
             echo "no changes — formula already up to date"
             exit 0
