@@ -221,7 +221,7 @@ jobs:
           linux_blocks=$( { emit on_intel x86_64-unknown-linux-gnu "$SHA_X86_LINUX"; emit on_arm aarch64-unknown-linux-gnu "$SHA_ARM_LINUX"; } )
           {
             printf 'class ZshrsNative < Formula\n'
-            printf '  desc "zshrs with git, arb and stryke compiled in as no-fork builtins"\n'
+            printf '  desc "Fat zshrs build with git, arb and stryke compiled in as no-fork builtins"\n'
             printf '  homepage "https://github.com/MenkeTechnologies/zshrs-native"\n'
             printf '  license "MIT"\n'
             # All three install a binary named `zshrs`.
