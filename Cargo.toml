@@ -1,6 +1,6 @@
 [package]
 name = "zshrs-native"
-version = "0.1.1"
+version = "0.1.2"
 edition = "2021"
 license = "MIT"
 authors = ["MenkeTechnologies <linux.dev25@gmail.com>"]
