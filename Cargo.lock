@@ -9407,7 +9407,7 @@ checksum = "29666d0abbfad1e3dc4dcf6144730dd3a3ab225bbbdac83319345b1b44ccfc1b"
 
 [[package]]
 name = "znative"
-version = "0.12.55"
+version = "0.12.56"
 
 [[package]]
 name = "zopfli"
@@ -9423,7 +9423,7 @@ dependencies = [
 
 [[package]]
 name = "zshrs"
-version = "0.12.55"
+version = "0.12.56"
 dependencies = [
  "atty",
  "bincode",
@@ -9476,7 +9476,7 @@ dependencies = [
 
 [[package]]
 name = "zshrs-daemon"
-version = "0.12.55"
+version = "0.12.56"
 dependencies = [
  "atty",
  "axum",
@@ -9513,7 +9513,7 @@ dependencies = [
 
 [[package]]
 name = "zshrs-native"
-version = "0.1.5"
+version = "0.1.6"
 dependencies = [
  "arblang",
  "dirs 5.0.1",
