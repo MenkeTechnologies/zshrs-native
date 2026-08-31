@@ -973,6 +973,12 @@ source = "registry+https://github.com/rust-lang/crates.io-index"
 checksum = "c2459377285ad874054d797f3ccebf984978aa39129f6eafde5cdc8315b612f8"
 
 [[package]]
+name = "const-oid"
+version = "0.10.2"
+source = "registry+https://github.com/rust-lang/crates.io-index"
+checksum = "a6ef517f0926dd24a1582492c791b6a4818a4d94e789a334894aa15b0d12f55c"
+
+[[package]]
 name = "constant_time_eq"
 version = "0.3.1"
 source = "registry+https://github.com/rust-lang/crates.io-index"
@@ -1647,7 +1653,7 @@ version = "0.7.10"
 source = "registry+https://github.com/rust-lang/crates.io-index"
 checksum = "e7c1832837b905bbfb5101e07cc24c8deddf52f93225eee6ead5f4d63d53ddcb"
 dependencies = [
- "const-oid",
+ "const-oid 0.9.6",
  "pem-rfc7468",
  "zeroize",
 ]
@@ -1718,7 +1724,7 @@ source = "registry+https://github.com/rust-lang/crates.io-index"
 checksum = "9ed9a281f7bc9b7576e61468ba615a66a5c8cfdff42420a70aa82701a3b1e292"
 dependencies = [
  "block-buffer 0.10.4",
- "const-oid",
+ "const-oid 0.9.6",
  "crypto-common 0.1.7",
  "subtle",
 ]
@@ -1730,6 +1736,7 @@ source = "registry+https://github.com/rust-lang/crates.io-index"
 checksum = "f1dd6dbb5841937940781866fa1281a1ff7bd3bf827091440879f9994983d5c2"
 dependencies = [
  "block-buffer 0.12.1",
+ "const-oid 0.10.2",
  "crypto-common 0.2.2",
 ]
 
@@ -6385,7 +6392,7 @@ version = "0.9.10"
 source = "registry+https://github.com/rust-lang/crates.io-index"
 checksum = "b8573f03f5883dcaebdfcf4725caa1ecb9c15b2ef50c43a07b816e06799bb12d"
 dependencies = [
- "const-oid",
+ "const-oid 0.9.6",
  "digest 0.10.7",
  "num-bigint-dig",
  "num-integer",
@@ -9506,7 +9513,7 @@ dependencies = [
 
 [[package]]
 name = "zshrs-native"
-version = "0.1.3"
+version = "0.1.4"
 dependencies = [
  "arblang",
  "dirs 5.0.1",
@@ -9579,13 +9586,14 @@ dependencies = [
 
 [[package]]
 name = "zvcs"
-version = "0.21.0"
+version = "0.22.5"
 dependencies = [
  "anyhow",
  "encoding_rs",
  "gix",
  "ignore",
  "libc",
+ "libloading",
  "memchr",
  "memmap2",
  "notify",
@@ -9599,6 +9607,14 @@ dependencies = [
  "rustls-native-certs",
  "rustls-pki-types",
  "security-framework-sys",
+ "serde",
  "serde_json",
+ "sha2 0.11.0",
+ "toml 1.1.4+spec-1.1.0",
  "unicode-width",
+ "zvcs-native",
 ]
+
+[[package]]
+name = "zvcs-native"
+version = "0.22.5"
