@@ -9514,7 +9514,7 @@ dependencies = [
 
 [[package]]
 name = "zshrs-native"
-version = "0.1.8"
+version = "0.1.9"
 dependencies = [
  "arblang",
  "dirs 5.0.1",
