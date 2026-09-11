@@ -204,7 +204,7 @@ dependencies = [
 
 [[package]]
 name = "arblang"
-version = "0.1.16"
+version = "0.1.17"
 dependencies = [
  "ansi-to-tui",
  "base64 0.22.1",
@@ -9514,7 +9514,7 @@ dependencies = [
 
 [[package]]
 name = "zshrs-native"
-version = "0.1.10"
+version = "0.1.11"
 dependencies = [
  "arblang",
  "dirs 5.0.1",
