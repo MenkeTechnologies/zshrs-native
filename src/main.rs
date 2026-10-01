@@ -56,10 +56,12 @@ fn main() {
         zsh::register_native_command(name, stryke::cli::run_argv);
     }
 
-    // `@ <code>` at the prompt runs stryke instead of shell code. The hook is
-    // a `OnceLock` in the zshrs lib (`zsh::set_stryke_handler`); the thin
-    // binary never registers one, so `@` there is an ordinary character.
-    // `process_line` consults it via `zsh::try_stryke_dispatch`.
+    // `@ <code>` runs stryke instead of shell code. The hook is a `OnceLock`
+    // in the zshrs lib (`zsh::set_stryke_handler`); the thin binary never
+    // registers one, so `@` there is an ordinary character. It is consulted
+    // via `zsh::try_stryke_dispatch` from `intercept` advice bodies
+    // (`execute_advice`) and from `process_line`, which nothing reaches; the
+    // prompt and `-c` do not consult it.
     zsh::set_stryke_handler(|code| match stryke::run(code) {
         Ok(_) => 0,
         Err(e) => {

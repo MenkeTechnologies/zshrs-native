@@ -53,7 +53,7 @@ superset of the thin shell, not a different one.
 | `git` | [zvcs](https://github.com/MenkeTechnologies/zvcs) — vendored gitoxide, every porcelain verb native | `/usr/bin/git` |
 | `arb` | [arblang](https://github.com/MenkeTechnologies/arb) — pipeline TUI, query engine, fzf finder | `fzf`, `jq`, `yq` |
 | `stryke` · `st` · `s` | [strykelang](https://github.com/MenkeTechnologies/strykelang) — Perl-superset scripting; all three names it ships, each dispatching on its own `argv[0]` | `perl`, `awk` |
-| `@ <code>` | strykelang, inline at the prompt | — |
+| `@ <code>` | strykelang handler registered via `zsh::set_stryke_handler`; reached from `intercept` advice bodies, not from the prompt (see Status) | — |
 
 ```
 ┌─────────────────────────────────────────────────────────────┐
@@ -178,7 +178,7 @@ is `vendor/arb/src/fzf.rs`.
 | `git status` | fork + exec + ld.so + libc init | **Builtin** — zero fork |
 | `… \| fzf` | fork + exec the fzf binary | **Builtin** — zero fork |
 | `stryke -ne '…'` | fork + exec | **Builtin** — zero fork |
-| `@ <code>` | not possible | Inline stryke at the prompt |
+| `@ <code>` in `intercept` advice | not possible | Advice body runs as stryke, no fork; a leading `@` at the prompt is not dispatched (see Status) |
 
 ### How a name reaches a runtime
 
@@ -296,7 +296,7 @@ Linking the four surfaced three upstream conflicts, each fixed at its source:
 |---|---|
 | Four runtimes link into one binary | **Working** — one fusevm, one libsqlite3-sys |
 | `git` / `arb` / `stryke` as builtins | **Working.** `whence -w` reports `builtin`, `${+builtins[git]}` is 1, and with `PATH` emptied `git --version`, `stryke -e …` and `arb --filter …` all still answer while `ls` reports command not found — nothing is resolved through `PATH` or spawned |
-| `@ <code>` → stryke | **Registered, not reached.** `zsh::try_stryke_dispatch` is consulted from `bins/zshrs.rs:process_line`, which serves only the line-by-line script reader; the prompt and `-c` go through the ported lexer in the library, where a leading `@` is still an ordinary character |
+| `@ <code>` → stryke | **Registered; reached only from `intercept` advice.** `src/main.rs` registers `stryke::run` with `zsh::set_stryke_handler`. In the pinned zshrs the library's one caller of `zsh::try_stryke_dispatch` is `execute_advice` (`src/extensions/intercepts.rs:535`), so an `intercept before\|after\|around <cmd> { @ … }` body runs as stryke. The other caller, `bins/zshrs.rs:process_line`, is dead code: its only caller is `source_file`, reached only through `source_logout_files`, which nothing calls. The prompt goes through `zsh::ported::init::zsh_main` (`bins/zshrs.rs:3179`) and `-c` through `ShellExecutor::execute_script` (`bins/zshrs.rs:2870`); neither consults the handler, so a leading `@` there is an ordinary character |
 
 ---
 
