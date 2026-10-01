@@ -1,6 +1,6 @@
 [package]
 name = "zshrs-native"
-version = "0.1.11"
+version = "0.1.12"
 edition = "2021"
 license = "MIT"
 authors = ["MenkeTechnologies <linux.dev25@gmail.com>"]
@@ -44,8 +44,9 @@ zshrs-daemon = { path = "vendor/zshrs/daemon", optional = true }
 # The three runtimes that become builtins. All four packages must resolve to
 # ONE fusevm: it exports 59 `#[no_mangle]` symbols across its aot/jit
 # modules and cargo treats 0.x minors as semver-incompatible, so two copies in
-# the graph is a link failure, not merely waste. All of zshrs, strykelang and
-# arblang request `fusevm 0.26.0` as of this pin; zvcs does not use fusevm.
+# the graph is a link failure, not merely waste. As of this pin zshrs and
+# strykelang request `fusevm 0.26.7` and arblang `0.26.0`, which all resolve to
+# 0.26.7; zvcs does not use fusevm.
 strykelang = { path = "vendor/strykelang" }
 arblang = { path = "vendor/arb" }
 zvcs = { path = "vendor/zvcs/src/extensions" }

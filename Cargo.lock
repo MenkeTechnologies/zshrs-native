@@ -204,7 +204,7 @@ dependencies = [
 
 [[package]]
 name = "arblang"
-version = "0.1.17"
+version = "0.1.20"
 dependencies = [
  "ansi-to-tui",
  "base64 0.22.1",
@@ -303,7 +303,7 @@ version = "0.2.14"
 source = "registry+https://github.com/rust-lang/crates.io-index"
 checksum = "d9b39be18770d11421cdb1b9947a45dd3f37e93092cbf377614828a319d5fee8"
 dependencies = [
- "hermit-abi 0.1.19",
+ "hermit-abi",
  "libc",
  "winapi",
 ]
@@ -1366,16 +1366,6 @@ dependencies = [
 ]
 
 [[package]]
-name = "crosstermion"
-version = "0.16.0"
-source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "d6ae462f0b868614980d59df41e217a77648de7ad7cf8b2a407155659896d889"
-dependencies = [
- "crossterm 0.29.0",
- "nu-ansi-term",
-]
-
-[[package]]
 name = "crypto-bigint"
 version = "0.5.5"
 source = "registry+https://github.com/rust-lang/crates.io-index"
@@ -2241,9 +2231,9 @@ checksum = "e6d5a32815ae3f33302d95fdcb2ce17862f8c65363dcfd29360480ba1001fc9c"
 
 [[package]]
 name = "fusevm"
-version = "0.26.0"
+version = "0.26.7"
 source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "765a6e513525559e24870c5bf83dcf452c823636a03dfe65ef72fc323699ad7e"
+checksum = "93e134c61a2f7365207bc23a2324c7f5c9768f42a123759400ac0718f68956b1"
 dependencies = [
  "base64 0.22.1",
  "bincode",
@@ -3420,12 +3410,6 @@ dependencies = [
 ]
 
 [[package]]
-name = "hermit-abi"
-version = "0.5.2"
-source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "fc0fef456e4baa96da950455cd02c081ca953b141298e41db3fc7e36b1da849c"
-
-[[package]]
 name = "hex"
 version = "0.4.3"
 source = "registry+https://github.com/rust-lang/crates.io-index"
@@ -3899,17 +3883,6 @@ name = "ipnet"
 version = "2.12.1"
 source = "registry+https://github.com/rust-lang/crates.io-index"
 checksum = "6a756c3fac73139e83f14c2d742155dd2b78d3ee56597b419a0579b7bdd6dd78"
-
-[[package]]
-name = "is-terminal"
-version = "0.4.17"
-source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "3640c1c38b8e4e43584d8df18be5fc6b0aa314ce6ebf51b53313d4306cca8e46"
-dependencies = [
- "hermit-abi 0.5.2",
- "libc",
- "windows-sys 0.61.2",
-]
 
 [[package]]
 name = "is_terminal_polyfill"
@@ -5700,12 +5673,8 @@ source = "registry+https://github.com/rust-lang/crates.io-index"
 checksum = "962200e2d7d551451297d9fdce85138374019ada198e30ea9ede38034e27604c"
 dependencies = [
  "bytesize",
- "crosstermion",
  "human_format",
- "is-terminal",
- "jiff",
  "parking_lot",
- "unicode-width",
 ]
 
 [[package]]
@@ -7294,7 +7263,7 @@ dependencies = [
 
 [[package]]
 name = "strykelang"
-version = "0.17.54"
+version = "0.17.59"
 dependencies = [
  "aes",
  "aes-gcm",
@@ -9407,7 +9376,7 @@ checksum = "29666d0abbfad1e3dc4dcf6144730dd3a3ab225bbbdac83319345b1b44ccfc1b"
 
 [[package]]
 name = "znative"
-version = "0.12.63"
+version = "0.12.68"
 
 [[package]]
 name = "zopfli"
@@ -9423,7 +9392,7 @@ dependencies = [
 
 [[package]]
 name = "zshrs"
-version = "0.12.63"
+version = "0.12.68"
 dependencies = [
  "atty",
  "bincode",
@@ -9477,7 +9446,7 @@ dependencies = [
 
 [[package]]
 name = "zshrs-daemon"
-version = "0.12.63"
+version = "0.12.68"
 dependencies = [
  "atty",
  "axum",
@@ -9514,7 +9483,7 @@ dependencies = [
 
 [[package]]
 name = "zshrs-native"
-version = "0.1.11"
+version = "0.1.12"
 dependencies = [
  "arblang",
  "dirs 5.0.1",
@@ -9587,7 +9556,7 @@ dependencies = [
 
 [[package]]
 name = "zvcs"
-version = "0.22.5"
+version = "0.22.7"
 dependencies = [
  "anyhow",
  "encoding_rs",
@@ -9603,6 +9572,7 @@ dependencies = [
  "ratatui",
  "reedline 0.49.0",
  "regex",
+ "regex-automata",
  "rkyv",
  "rusqlite",
  "rustls",
@@ -9614,9 +9584,10 @@ dependencies = [
  "sha2 0.11.0",
  "toml 1.1.4+spec-1.1.0",
  "unicode-width",
+ "zlib-rs",
  "zvcs-native",
 ]
 
 [[package]]
 name = "zvcs-native"
-version = "0.22.5"
+version = "0.22.7"
