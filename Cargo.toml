@@ -42,10 +42,10 @@ zshrs = { path = "vendor/zshrs", default-features = false, features = ["daemon"]
 zshrs-daemon = { path = "vendor/zshrs/daemon", optional = true }
 
 # The three runtimes that become builtins. All four packages must resolve to
-# ONE fusevm: it exports 67 `#[no_mangle]` symbols across its aot/jit/ffi
+# ONE fusevm: it exports 59 `#[no_mangle]` symbols across its aot/jit
 # modules and cargo treats 0.x minors as semver-incompatible, so two copies in
 # the graph is a link failure, not merely waste. All of zshrs, strykelang and
-# arblang request `fusevm 0.22.0` as of this pin; zvcs does not use fusevm.
+# arblang request `fusevm 0.26.0` as of this pin; zvcs does not use fusevm.
 strykelang = { path = "vendor/strykelang" }
 arblang = { path = "vendor/arb" }
 zvcs = { path = "vendor/zvcs/src/extensions" }
