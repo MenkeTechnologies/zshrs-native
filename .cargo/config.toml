@@ -1,0 +1,11 @@
+[env]
+# rustc 1.99.0 overflows its 8 MiB compiler-thread stack building the
+# strykelang lib: MIR match lowering (`Builder::match_candidates` <->
+# `test_candidates`) recurses on one of its large `match` expressions and
+# dies with SIGBUS on macOS, in `cargo check` as well as release builds.
+# 1.98.1 compiles the same source. rustc sizes that thread from
+# RUST_MIN_STACK, and cargo's [env] reaches every rustc it spawns, so this
+# covers CI, `cargo build` and `cargo install --path .` alike.
+# Measured: `cargo +1.99.0 check --lib` on strykelang b42c72b7d3 crashes at
+# the default and finishes with 64 MiB.
+RUST_MIN_STACK = "67108864"
