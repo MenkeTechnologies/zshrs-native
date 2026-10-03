@@ -1769,7 +1769,7 @@ dependencies = [
  "libc",
  "option-ext",
  "redox_users 0.5.2",
- "windows-sys 0.61.2",
+ "windows-sys 0.59.0",
 ]
 
 [[package]]
@@ -1962,7 +1962,7 @@ source = "registry+https://github.com/rust-lang/crates.io-index"
 checksum = "39cab71617ae0d63f51a36d69f866391735b51691dbda63cf6f96d042b63efeb"
 dependencies = [
  "libc",
- "windows-sys 0.61.2",
+ "windows-sys 0.59.0",
 ]
 
 [[package]]
@@ -3051,6 +3051,19 @@ dependencies = [
  "gix-revision",
  "gix-validate",
  "smallvec",
+ "thiserror 2.0.20",
+]
+
+[[package]]
+name = "gix-reftable"
+version = "0.1.0"
+dependencies = [
+ "bstr",
+ "gix-lock",
+ "gix-tempfile",
+ "gix-utils",
+ "gix-zlib",
+ "memmap2",
  "thiserror 2.0.20",
 ]
 
@@ -4819,7 +4832,7 @@ version = "0.50.3"
 source = "registry+https://github.com/rust-lang/crates.io-index"
 checksum = "7957b9740744892f114936ab4a57b3f487491bbeafaf8083688b16841a4240e5"
 dependencies = [
- "windows-sys 0.61.2",
+ "windows-sys 0.59.0",
 ]
 
 [[package]]
@@ -5063,7 +5076,7 @@ source = "registry+https://github.com/rust-lang/crates.io-index"
 checksum = "7d8fae84b431384b68627d0f9b3b1245fcf9f46f6c0e3dc902e9dce64edd1967"
 dependencies = [
  "libc",
- "windows-sys 0.61.2",
+ "windows-sys 0.59.0",
 ]
 
 [[package]]
@@ -5781,7 +5794,7 @@ dependencies = [
  "once_cell",
  "socket2",
  "tracing",
- "windows-sys 0.61.2",
+ "windows-sys 0.59.0",
 ]
 
 [[package]]
@@ -6414,7 +6427,7 @@ dependencies = [
  "errno",
  "libc",
  "linux-raw-sys",
- "windows-sys 0.61.2",
+ "windows-sys 0.59.0",
 ]
 
 [[package]]
@@ -6473,7 +6486,7 @@ dependencies = [
  "security-framework",
  "security-framework-sys",
  "webpki-root-certs",
- "windows-sys 0.61.2",
+ "windows-sys 0.59.0",
 ]
 
 [[package]]
@@ -7697,7 +7710,7 @@ dependencies = [
  "getrandom 0.4.3",
  "once_cell",
  "rustix",
- "windows-sys 0.61.2",
+ "windows-sys 0.59.0",
 ]
 
 [[package]]
@@ -8838,7 +8851,7 @@ version = "0.1.11"
 source = "registry+https://github.com/rust-lang/crates.io-index"
 checksum = "c2a7b1c03c876122aa43f3020e6c3c3ee5c05081c9a00739faf7503aeba10d22"
 dependencies = [
- "windows-sys 0.61.2",
+ "windows-sys 0.59.0",
 ]
 
 [[package]]
@@ -9376,7 +9389,7 @@ checksum = "29666d0abbfad1e3dc4dcf6144730dd3a3ab225bbbdac83319345b1b44ccfc1b"
 
 [[package]]
 name = "znative"
-version = "0.12.68"
+version = "0.12.70"
 
 [[package]]
 name = "zopfli"
@@ -9392,7 +9405,7 @@ dependencies = [
 
 [[package]]
 name = "zshrs"
-version = "0.12.68"
+version = "0.12.70"
 dependencies = [
  "atty",
  "bincode",
@@ -9446,7 +9459,7 @@ dependencies = [
 
 [[package]]
 name = "zshrs-daemon"
-version = "0.12.68"
+version = "0.12.70"
 dependencies = [
  "atty",
  "axum",
@@ -9483,7 +9496,7 @@ dependencies = [
 
 [[package]]
 name = "zshrs-native"
-version = "0.1.12"
+version = "0.1.13"
 dependencies = [
  "arblang",
  "dirs 5.0.1",
@@ -9562,6 +9575,7 @@ dependencies = [
  "encoding_rs",
  "fancy-regex 0.18.0",
  "gix",
+ "gix-reftable",
  "ignore",
  "libc",
  "libloading",
