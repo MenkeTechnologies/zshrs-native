@@ -50,10 +50,12 @@ fn main() {
     // `stryke::cli` reads for itself — so registering only `stryke` would have
     // left `s` and `st` forking to `/opt/homebrew/bin/s` from inside a shell
     // that has strykelang linked in.
-    zsh::register_native_command("git", zvcs::run_argv);
-    zsh::register_native_command("arb", arb::cli::run_argv);
+    zsh::register_native_command("git", |argv| restore_terminal(zvcs::run_argv(argv)));
+    zsh::register_native_command("arb", |argv| restore_terminal(arb::cli::run_argv(argv)));
     for name in ["stryke", "st", "s"] {
-        zsh::register_native_command(name, stryke::cli::run_argv);
+        zsh::register_native_command(name, |argv| {
+            restore_terminal(stryke::cli::run_argv(argv))
+        });
     }
 
     // `@ <code>` runs stryke instead of shell code. The hook is a `OnceLock`
@@ -62,14 +64,38 @@ fn main() {
     // via `zsh::try_stryke_dispatch` from `intercept` advice bodies
     // (`execute_advice`) and from `process_line`, which nothing reaches; the
     // prompt and `-c` do not consult it.
-    zsh::set_stryke_handler(|code| match stryke::run(code) {
-        Ok(_) => 0,
-        Err(e) => {
-            // zsh-style terse diagnostic on stderr: `zshrs: <cmd>: <reason>`.
-            eprintln!("zshrs: stryke: {e}");
-            1
-        }
+    zsh::set_stryke_handler(|code| {
+        restore_terminal(match stryke::run(code) {
+            Ok(_) => 0,
+            Err(e) => {
+                // zsh-style terse diagnostic on stderr: `zshrs: <cmd>: <reason>`.
+                eprintln!("zshrs: stryke: {e}");
+                1
+            }
+        })
     });
 
     shell::zshrs_main();
+}
+
+/// Put the terminal back the way a runtime found it, as process exit used to.
+///
+/// crossterm keeps the termios it saved on `enable_raw_mode` in a process-wide
+/// static, and while that static is set `enable_raw_mode` returns `Ok` without
+/// touching the terminal (crossterm 0.29 `src/terminal/sys/unix.rs:108`). A
+/// runtime that left raw mode set by any path that skips `disable_raw_mode` —
+/// an `exit` unwound by `hosted::run`, a `?` between arb's `enable_raw_mode`
+/// and its `disable_raw_mode`, a caught panic — used to lose that static with
+/// its process. In here it outlives the command: zle restores cooked mode at
+/// the next prompt, and every later reedline (stryke's REPL, arb's REPL) then
+/// "enables" raw mode on a cooked terminal. The terminal's answer to the
+/// cursor-position query sits in the canonical line buffer, crossterm times out
+/// with "The cursor position could not be read within a normal duration", and
+/// the answer is echoed into the next line read as `^[[80;1R`.
+///
+/// `disable_raw_mode` is a no-op when the static is clear, so calling it after
+/// every native command costs nothing when the runtime cleaned up after itself.
+fn restore_terminal(status: i32) -> i32 {
+    let _ = crossterm::terminal::disable_raw_mode();
+    status
 }

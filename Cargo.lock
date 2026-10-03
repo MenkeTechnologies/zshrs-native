@@ -9499,6 +9499,7 @@ name = "zshrs-native"
 version = "0.1.16"
 dependencies = [
  "arblang",
+ "crossterm 0.29.0",
  "dirs 5.0.1",
  "libc",
  "serde_json",

@@ -210,6 +210,16 @@ one it does not: an `exit` from deep in a rendering loop unwinds back instead
 of taking the shell down, a panic becomes an exit status, and a `git -C <dir>`
 that moved the working directory is undone on the way out.
 
+`src/main.rs` adds one more undo around every registered command: it calls
+crossterm's `disable_raw_mode`. crossterm records "raw mode is on" in a
+process-wide static, and while it is set `enable_raw_mode` does nothing. A
+runtime that left raw mode by a path that skipped `disable_raw_mode` used to
+lose that static with its process; inside the shell it would persist, so every
+later stryke or arb REPL "enabled" raw mode on a cooked terminal, missed the
+reply to its cursor-position query, and fell back to plain line input with the
+reply (`^[[80;1R`) echoed into the next line. The call is a no-op when the
+runtime cleaned up after itself.
+
 One thing the wrapper cannot undo is a child git spawns on purpose. git forks a
 `git` child for a handful of jobs — `status` asks one for the submodule
 summary, `submodule update` fetches through one, `rebase` drives `am` and

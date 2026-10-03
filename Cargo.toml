@@ -56,6 +56,11 @@ zvcs = { path = "vendor/zvcs/src/extensions" }
 # package does not own, so keep them in sync when bumping the submodule.
 libc = "0.2"
 dirs = "5"
+
+# `restore_terminal` in `src/main.rs` clears crossterm's process-wide raw-mode
+# static after each native command. It must be the SAME crossterm the runtimes'
+# reedline and ratatui use (0.29), or it clears a different copy's static.
+crossterm = "0.29"
 tracing = "0.1"
 serde_json = "1"
 
