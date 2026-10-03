@@ -61,9 +61,10 @@ fn main() {
     // `@ <code>` runs stryke instead of shell code. The hook is a `OnceLock`
     // in the zshrs lib (`zsh::set_stryke_handler`); the thin binary never
     // registers one, so `@` there is an ordinary character. It is consulted
-    // via `zsh::try_stryke_dispatch` from `intercept` advice bodies
-    // (`execute_advice`) and from `process_line`, which nothing reaches; the
-    // prompt and `-c` do not consult it.
+    // at the interactive prompt (`zsh::ported::input::inputline`, on the first
+    // line of each command, before the lexer sees it) and from `intercept`
+    // advice bodies (`execute_advice`). `-c` and sourced files do not consult
+    // it.
     zsh::set_stryke_handler(|code| {
         restore_terminal(match stryke::run(code) {
             Ok(_) => 0,
