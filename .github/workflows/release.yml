@@ -28,6 +28,14 @@ jobs:
     # dependencies awkwardly, so the publish + tap jobs ship from whichever
     # targets did build. `needs: build` is satisfied either way.
     continue-on-error: ${{ matrix.allow_failure || false }}
+    # The root profile is `lto = "fat"`. On the 4-core/16 GB aarch64 Linux
+    # runners the single-threaded fat-LTO link of all four runtimes now
+    # exhausts memory: v0.1.23 and v0.1.24 both lost the runner mid-build
+    # ("The hosted runner lost communication with the server ... starves it
+    # for CPU/Memory"), where v0.1.22 built in 39 minutes. Those two targets
+    # link with thin LTO instead (`lto: thin` below); everything else keeps fat.
+    env:
+      CARGO_PROFILE_RELEASE_LTO: ${{ matrix.lto || 'fat' }}
     strategy:
       fail-fast: false
       matrix:
@@ -42,6 +50,7 @@ jobs:
             target: x86_64-unknown-linux-gnu
           - os: ubuntu-24.04-arm
             target: aarch64-unknown-linux-gnu
+            lto: thin
           # --- Linux musl static ---
           # zvcs's vendored gitoxide reaches libz/openssl through its transport
           # stack and strykelang links git2 + symphonia, so a fully static musl
@@ -52,6 +61,7 @@ jobs:
             allow_failure: true
           - os: ubuntu-24.04-arm
             target: aarch64-unknown-linux-musl
+            lto: thin
             allow_failure: true
     steps:
       - uses: actions/checkout@v6
