@@ -9500,7 +9500,7 @@ dependencies = [
 
 [[package]]
 name = "zshrs-native"
-version = "0.1.22"
+version = "0.1.23"
 dependencies = [
  "arblang",
  "crossterm 0.29.0",
