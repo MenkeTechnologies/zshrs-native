@@ -220,6 +220,15 @@ reply to its cursor-position query, and fell back to plain line input with the
 reply (`^[[80;1R`) echoed into the next line. The call is a no-op when the
 runtime cleaned up after itself.
 
+crossterm's input is built with its `use-dev-tty` feature for the same reason.
+Its default event source is a process-wide singleton that registers stdin with
+kqueue (epoll on Linux) once, on the first REPL. The shell runs builtins
+in-process, so `true </dev/null`, the `cat` in `echo hi | cat`, or a precmd
+hook doing either dup2()s over fd 0 and back; on macOS closing the old
+descriptor drops the kqueue registration, and the next stryke or arb REPL
+waited for input that never woke it. `use-dev-tty` polls the tty with poll(2)
+on every read instead.
+
 One thing the wrapper cannot undo is a child git spawns on purpose. git forks a
 `git` child for a handful of jobs — `status` asks one for the submodule
 summary, `submodule update` fetches through one, `rebase` drives `am` and
