@@ -192,10 +192,10 @@ dependent unpublishable. So `src/main.rs` registers them before the shell reads
 a line:
 
 ```rust
-zsh::register_native_command("git", zvcs::run_argv);
-zsh::register_native_command("arb", arb::cli::run_argv);
+zsh::register_native_command("git", |argv| restore_terminal(zvcs::run_argv(argv)));
+zsh::register_native_command("arb", |argv| restore_terminal(arb::cli::run_argv(argv)));
 for name in ["stryke", "st", "s"] {
-    zsh::register_native_command(name, stryke::cli::run_argv);
+    zsh::register_native_command(name, |argv| restore_terminal(stryke::cli::run_argv(argv)));
 }
 ```
 
@@ -284,7 +284,7 @@ vendor/strykelang  stryke
 
 Both are load-bearing. Violating either breaks the build or the shell.
 
-**One fusevm.** It exports 59 `#[no_mangle]` symbols across its `aot`/`jit`
+**One fusevm.** It exports `#[no_mangle]` symbols across its `aot`/`jit`
 modules, and Cargo treats `0.x` minors as semver-incompatible, so two copies in
 the graph is a duplicate-symbol link failure. Every runtime must request the
 same minor. `cargo check` does not link and will not catch a violation;
