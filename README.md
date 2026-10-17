@@ -262,7 +262,7 @@ optional one behind a feature flag — makes a crate unpublishable. So the fat
 build cannot live in `zshrs` as a feature. It lives here, with all four
 runtimes as submodules.
 
-The shell's whole REPL is in the zshrs repo's `bins/zshrs.rs`, a **binary**
+The shell's whole REPL is in the zshrs repo's `vendor/zshrs/bins/zshrs.rs`, a **binary**
 target, and Cargo binaries cannot be imported by another package. `src/main.rs`
 pulls it in as a module with `#[path]` instead — the same trick the original fat
 binary used before the strykelang monorepo was split apart
@@ -315,7 +315,7 @@ Linking the four surfaced three upstream conflicts, each fixed at its source:
 |---|---|
 | Four runtimes link into one binary | **Working** — one fusevm, one libsqlite3-sys |
 | `git` / `arb` / `stryke` as builtins | **Working.** `whence -w` reports `builtin`, `${+builtins[git]}` is 1, and with `PATH` emptied `git --version`, `stryke -e …` and `arb --filter …` all still answer while `ls` reports command not found — nothing is resolved through `PATH` or spawned |
-| `@ <code>` → stryke | **Working at the prompt and in `intercept` advice; not under `-c`.** `src/main.rs` registers `stryke::run` with `zsh::set_stryke_handler`. At the prompt, `zsh::ported::input::inputline` hands each first line of a command to `zsh::stryke_line` before the lexer sees it, so `@ p for 1:3` runs as stryke in-process, sets `$?` to the handler status, and is recorded in history. A `@` on a continuation line stays shell input. An `intercept before\|after\|around <cmd> { @ … }` body reaches the handler through `execute_advice` (`src/extensions/intercepts.rs`). `-c` goes through `ShellExecutor::execute_script` and sourced files through the same lexer path without the hook, so a leading `@` there is an ordinary character |
+| `@ <code>` → stryke | **Working at the prompt and in `intercept` advice; not under `-c`.** `src/main.rs` registers `stryke::run` with `zsh::set_stryke_handler`. At the prompt, `zsh::ported::input::inputline` hands each first line of a command to `zsh::stryke_line` before the lexer sees it, so `@ p for 1:3` runs as stryke in-process, sets `$?` to the handler status, and is recorded in history. A `@` on a continuation line stays shell input. An `intercept before\|after\|around <cmd> { @ … }` body reaches the handler through `execute_advice` (`vendor/zshrs/src/extensions/intercepts.rs`). `-c` goes through `ShellExecutor::execute_script` and sourced files through the same lexer path without the hook, so a leading `@` there is an ordinary character |
 
 ---
 
