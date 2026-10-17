@@ -42,7 +42,7 @@ zshrs = { path = "vendor/zshrs", default-features = false, features = ["daemon"]
 zshrs-daemon = { path = "vendor/zshrs/daemon", optional = true }
 
 # The three runtimes that become builtins. All four packages must resolve to
-# ONE fusevm: it exports 59 `#[no_mangle]` symbols across its aot/jit
+# ONE fusevm: it exports `#[no_mangle]` symbols across its aot/jit
 # modules and cargo treats 0.x minors as semver-incompatible, so two copies in
 # the graph is a link failure, not merely waste. The vendored zshrs,
 # strykelang and arblang all request fusevm 0.26.x, which resolve to the single
@@ -78,7 +78,7 @@ serde_json = "1"
 # SECOND shell into the graph beside `vendor/zshrs`, and with it a second
 # fusevm: the registry zshrs pins an older fusevm 0.x minor than the
 # vendored runtimes (0.26.x), and cargo treats 0.x minors as semver-incompatible, so both were
-# compiled in. Two copies of fusevm means two definitions of each of its 67
+# compiled in. Two copies of fusevm means two definitions of each of its
 # `#[no_mangle]` symbols, which is the exact condition the dependency comments
 # above exist to prevent — and under `lto = "fat"` it surfaces as
 #
